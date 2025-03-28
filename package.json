@@ -7,9 +7,17 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
+    "animated-backgrounds": "^1.1.0",
+    "axios": "^1.8.3",
+    "bootstrap": "^5.3.3",
+    "country-flag-icons": "^1.5.18",
+    "firebase": "^11.4.0",
     "react": "^19.0.0",
+    "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
     "react-scripts": "5.0.1",
+    "react-select": "^5.10.1",
+    "react-select-country-list": "^2.2.3",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
