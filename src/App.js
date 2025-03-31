@@ -10,34 +10,23 @@ import { hasFlag } from 'country-flag-icons'
 import getUnicodeFlagIcon from 'country-flag-icons/unicode'
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
+import getUserCountry from "js-user-country";
+import { set } from 'mongoose';
 
-const server = "http://localhost:3001/";
+var server = "http://localhost:3001/";
+//server = "https://beglobachat-1.onrender.com/";
+const countryCode = getUserCountry().id;
+const countryName = getUserCountry().name;
+
 function App() {
-  const [locationData, setLocationData] = useState(null);
   const [showletter, setshowletter] = useState(false);
-  const [to, setto] = useState(null);
+  const [to, setto] = useState({"label":countryName, "value":countryCode});
   const [letters, setletters] = useState([]);
-
-  
-  async function getLocation() {
-    // it will return the following attributes:
-    // country, countryCode, regionName, city, lat, lon, zip and timezone
-    const res = await axios.get("http://ip-api.com/json");
-    if (res.status === 200) {
-        setLocationData(res.data)
-        if (to === null) {
-          setto({"label":res.data.country, "value":res.data.countryCode});
-        }
-    }
-  }
-
-  useEffect(() => {
-      getLocation();
-  }, []);
+  const [logmsg, setlogmsg] = useState("");
 
   useEffect(()=>{
     getletters();
-  }, [locationData]);
+  }, []);
 
 
    async function deleteletter(id, e) {
@@ -59,30 +48,34 @@ function App() {
     }
   }
 
-  function getletters() {
+  async function getletters() {
     try {
-      if (locationData !== null) {
-        let url = server+"getletters?to="+locationData.countryCode;
+        let url = server+"getletters?to="+countryCode;
         console.log("fetching ltrs from ",url);
-        fetch(url, {
+        setlogmsg("loading letters sent to "+countryName+"...");
+        await fetch(url, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
           }
-        }).then(response => response.json())
-        .then(data => { setletters(data); });
-      }
+        }).then(response => response !== null?response.json():{})
+        .then(data => { setletters(data); setlogmsg("") }).catch(err=>{
+          setlogmsg("error loading letters");
+        });
+      
     }
     catch (err) {
       console.log("error getting letters",err);
     }
   }
 
-  function send(e) {
+  async function send(e) {
     e.preventDefault();
     let cntry = e.target.to.value;
     let msg = e.target.msg.value;
     let url = server+"send/";
+    
+    
     console.log("send", cntry, msg);
     fetch(url, {
       method: 'POST',
@@ -91,11 +84,18 @@ function App() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        "from": locationData.countryCode,
+        "from": countryCode,
         "to": cntry,
         "msg": msg,
       })
-    }).then(res => res).then(data => getletters());
+    }).then(res => res).then(data => { 
+      getletters(); 
+      setlogmsg("Letter successfully sent to "+countryList().getLabel(cntry));
+      setshowletter(false);
+      e.target.msg.value = "";
+    }).catch(
+      err=> console.log("error sending da msg:",err)
+    );
   }
 
   const countrieslist = useMemo(() => countryList().getData(), []);
@@ -112,6 +112,7 @@ function App() {
       <button className="active btn" onClick={e=>setshowletter(true)}>
         Create+
         </button><br/><br/>
+        <p>{logmsg}</p>
       {showletter?
       <div>
         <form onSubmit={e=>send(e)}>
@@ -134,8 +135,7 @@ function App() {
 
       </div>
       <div style={{color:"black"}}>
-        {locationData?
-        <h5>Letters sent to {locationData.country} {getflag(locationData.countryCode)}
+        <h5>Letters sent to {countryName} {getflag(countryCode)}
         { letters.map((l,i)=>
           <div className="letter" key={"letter"+i}>
             <p>A letter from {l.from?countryList().getLabel(l.from):"unknown"} {getflag(l.from)} {l.date}</p><br/>
@@ -144,10 +144,6 @@ function App() {
           </div>
         )}
         </h5>
-        :
-        <p>Sorry we could not determine your country, please check location preferences</p>}
-        <p>
-        </p>
       </div>
 
     </div>
